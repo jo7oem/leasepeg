@@ -22,13 +22,18 @@ func (h handler) GetHealthcheck(ctx context.Context, request oapi.GetHealthcheck
 }
 
 func (h handler) GetPing(ctx context.Context, request oapi.GetPingRequestObject) (oapi.GetPingResponseObject, error) {
-	srcIP, err := srcIPFromContext(ctx)
+	srcAddr, err := srcIPFromContext(ctx)
 	if err != nil {
-		srcIP = "pong"
+		return nil, fmt.Errorf("failed to get src IP : %w", err)
+	}
+
+	srcIP, _, err := net.SplitHostPort(srcAddr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse src IP : %w", err)
 	}
 
 	resp := oapi.GetPing200JSONResponse{
-		Ping: srcIP,
+		SrcAddr: srcIP,
 	}
 
 	return resp, nil
