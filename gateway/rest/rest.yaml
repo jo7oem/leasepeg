@@ -28,6 +28,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/Pong'
 components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
   schemas:
     # base types
     Pong:
