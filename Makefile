@@ -9,12 +9,14 @@ build:
 	go build -o hatsukari ./...
 
 .PHONY: fmt
-fmt: $(DEV_BIN)/golangci-lint
+fmt: $(DEV_BIN)/golangci-lint  $(DEV_BIN)/yamlfmt
 	go fix ./...
 	$(DEV_BIN)/golangci-lint run --fix --config=.golangci.yml
+	$(DEV_BIN)/yamlfmt .
 
-.PHONY: lint
-lint: $(DEV_BIN)/golangci-lint
+.PHONY: go-lint
+go-lint: $(DEV_BIN)/golangci-lint
+	go fix ./...
 	$(DEV_BIN)/golangci-lint run --config=.golangci.yml
 
 .PHONY: setup
@@ -33,8 +35,24 @@ $(DEV_BIN)/dlv:
 	mkdir -p $(@D)
 	go install github.com/go-delve/delve/cmd/dlv@v1.26.0
 
+$(DEV_BIN)/yamlfmt:
+	mkdir -p $(@D)
+	go install github.com/google/yamlfmt/cmd/yamlfmt@latest
+
+
 .PHONY: ci
 ci: lint
+
+.PHONY: lint
+lint: go-lint redoc-lint yaml-lint
+
+.PHONY: redoc-lint
+redoc-lint:
+	podman compose --profile=lint run redoc-cli
+
+.PHONY: yaml-lint
+yaml-lint:  $(DEV_BIN)/yamlfmt
+	$(DEV_BIN)/yamlfmt -lint .
 
 .PHONY: test
 test:

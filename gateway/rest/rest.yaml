@@ -1,23 +1,38 @@
 openapi: "3.0.0"
 info:
-  version: 1.0.0
+  version: 0.0.1
   title: Minimal ping API server
 paths:
-  /healthcheck:
+  /healthcheck/live:
     get:
       responses:
         '200':
-          description: healthcheck response
+          description: healthcheck response about process liveness
           content:
             application/json:
               schema:
-                type: object
-                required:
-                    - status
-                properties:
-                  status:
-                    type: string
-                    example: ok
+                $ref: '#/components/healthcheckLiveResponse'
+  /healthcheck/ready:
+    get:
+      responses:
+        '200':
+          description: healthcheck response about process readiness
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/healthcheckReadyResponse'
+        '500':
+          description: healthcheck response about process internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/healthcheckReadyResponse'
+        '503':
+          description: healthcheck response about process not ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/healthcheckReadyResponse'
   /ping:
     get:
       responses:
@@ -27,8 +42,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Pong'
-  /
 components:
+  healthcheckStatus:
+    type: string
+    enum:
+      - starting
+      - ready
+      - degraded
+      - error
+      - shutting_down
+  healthcheckLiveResponse:
+    type: object
+    required:
+      - status
+    properties:
+      status:
+        type: string
+        example: "ready"
+  healthcheckReadyResponse:
+    type: object
+    required:
+      - status
+    properties:
+      status:
+        $ref: '#/components/healthcheckStatus'
+        example: "ready"
+      message:
+        type: string
+        example: "ready to serve requests"
   securitySchemes:
     basicAuth:
       type: http

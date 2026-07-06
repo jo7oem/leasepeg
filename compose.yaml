@@ -1,0 +1,11 @@
+services:
+  redoc-cli:
+    image: redocly/cli:latest
+    profiles:
+      - lint
+    volumes:
+      - .:/workspace
+    environment:
+      REDOCLY_TELEMETRY: "off"
+    working_dir: /workspace
+    command: lint gateway/rest/rest.yaml
