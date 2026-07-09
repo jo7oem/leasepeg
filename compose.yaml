@@ -8,4 +8,8 @@ services:
     environment:
       REDOCLY_TELEMETRY: "off"
     working_dir: /workspace
-    command: lint gateway/rest/rest.yaml
+    command:
+      - lint
+      - --config
+      - .redocly.yaml
+      - gateway/rest/rest.yaml
