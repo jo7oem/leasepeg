@@ -16,10 +16,54 @@ import (
 	"strings"
 )
 
+// Defines values for HealthcheckStatus.
+const (
+	Degraded     HealthcheckStatus = "degraded"
+	Error        HealthcheckStatus = "error"
+	Ready        HealthcheckStatus = "ready"
+	ShuttingDown HealthcheckStatus = "shutting_down"
+	Starting     HealthcheckStatus = "starting"
+)
+
+// Valid indicates whether the value is a known member of the HealthcheckStatus enum.
+func (e HealthcheckStatus) Valid() bool {
+	switch e {
+	case Degraded:
+		return true
+	case Error:
+		return true
+	case Ready:
+		return true
+	case ShuttingDown:
+		return true
+	case Starting:
+		return true
+	default:
+		return false
+	}
+}
+
 // Pong defines model for Pong.
 type Pong struct {
 	SrcAddr string `json:"src_addr"`
 }
+
+// HealthcheckLiveResp defines model for healthcheckLiveResp.
+type HealthcheckLiveResp struct {
+	Status string `json:"status"`
+}
+
+// HealthcheckReadyResp defines model for healthcheckReadyResp.
+type HealthcheckReadyResp struct {
+	Message *string           `json:"message,omitempty"`
+	Status  HealthcheckStatus `json:"status"`
+}
+
+// HealthcheckStatus defines model for healthcheckStatus.
+type HealthcheckStatus string
+
+// basicAuthContextKey is the context key for basicAuth security scheme
+type basicAuthContextKey string
 
 // RequestEditorFn  is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -94,15 +138,30 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
-	// GetHealthcheck request
-	GetHealthcheck(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// GetHealthcheckLive request
+	GetHealthcheckLive(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetHealthcheckReady request
+	GetHealthcheckReady(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetPing request
 	GetPing(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
-func (c *Client) GetHealthcheck(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetHealthcheckRequest(c.Server)
+func (c *Client) GetHealthcheckLive(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetHealthcheckLiveRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetHealthcheckReady(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetHealthcheckReadyRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -125,8 +184,8 @@ func (c *Client) GetPing(ctx context.Context, reqEditors ...RequestEditorFn) (*h
 	return c.Client.Do(req)
 }
 
-// NewGetHealthcheckRequest generates requests for GetHealthcheck
-func NewGetHealthcheckRequest(server string) (*http.Request, error) {
+// NewGetHealthcheckLiveRequest generates requests for GetHealthcheckLive
+func NewGetHealthcheckLiveRequest(server string) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -134,7 +193,34 @@ func NewGetHealthcheckRequest(server string) (*http.Request, error) {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/healthcheck")
+	operationPath := fmt.Sprintf("/healthcheck/live")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetHealthcheckReadyRequest generates requests for GetHealthcheckReady
+func NewGetHealthcheckReadyRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/healthcheck/ready")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -222,23 +308,24 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
-	// GetHealthcheckWithResponse request
-	GetHealthcheckWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetHealthcheckResponse, error)
+	// GetHealthcheckLiveWithResponse request
+	GetHealthcheckLiveWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetHealthcheckLiveResponse, error)
+
+	// GetHealthcheckReadyWithResponse request
+	GetHealthcheckReadyWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetHealthcheckReadyResponse, error)
 
 	// GetPingWithResponse request
 	GetPingWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetPingResponse, error)
 }
 
-type GetHealthcheckResponse struct {
+type GetHealthcheckLiveResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *struct {
-		Status string `json:"status"`
-	}
+	JSON200      *HealthcheckLiveResp
 }
 
 // Status returns HTTPResponse.Status
-func (r GetHealthcheckResponse) Status() string {
+func (r GetHealthcheckLiveResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -246,7 +333,7 @@ func (r GetHealthcheckResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetHealthcheckResponse) StatusCode() int {
+func (r GetHealthcheckLiveResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -254,7 +341,39 @@ func (r GetHealthcheckResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetHealthcheckResponse) ContentType() string {
+func (r GetHealthcheckLiveResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetHealthcheckReadyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *HealthcheckReadyResp
+	JSON500      *HealthcheckReadyResp
+	JSON503      *HealthcheckReadyResp
+}
+
+// Status returns HTTPResponse.Status
+func (r GetHealthcheckReadyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetHealthcheckReadyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetHealthcheckReadyResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -291,13 +410,22 @@ func (r GetPingResponse) ContentType() string {
 	return ""
 }
 
-// GetHealthcheckWithResponse request returning *GetHealthcheckResponse
-func (c *ClientWithResponses) GetHealthcheckWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetHealthcheckResponse, error) {
-	rsp, err := c.GetHealthcheck(ctx, reqEditors...)
+// GetHealthcheckLiveWithResponse request returning *GetHealthcheckLiveResponse
+func (c *ClientWithResponses) GetHealthcheckLiveWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetHealthcheckLiveResponse, error) {
+	rsp, err := c.GetHealthcheckLive(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetHealthcheckResponse(rsp)
+	return ParseGetHealthcheckLiveResponse(rsp)
+}
+
+// GetHealthcheckReadyWithResponse request returning *GetHealthcheckReadyResponse
+func (c *ClientWithResponses) GetHealthcheckReadyWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetHealthcheckReadyResponse, error) {
+	rsp, err := c.GetHealthcheckReady(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetHealthcheckReadyResponse(rsp)
 }
 
 // GetPingWithResponse request returning *GetPingResponse
@@ -309,28 +437,66 @@ func (c *ClientWithResponses) GetPingWithResponse(ctx context.Context, reqEditor
 	return ParseGetPingResponse(rsp)
 }
 
-// ParseGetHealthcheckResponse parses an HTTP response from a GetHealthcheckWithResponse call
-func ParseGetHealthcheckResponse(rsp *http.Response) (*GetHealthcheckResponse, error) {
+// ParseGetHealthcheckLiveResponse parses an HTTP response from a GetHealthcheckLiveWithResponse call
+func ParseGetHealthcheckLiveResponse(rsp *http.Response) (*GetHealthcheckLiveResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetHealthcheckResponse{
+	response := &GetHealthcheckLiveResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			Status string `json:"status"`
-		}
+		var dest HealthcheckLiveResp
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetHealthcheckReadyResponse parses an HTTP response from a GetHealthcheckReadyWithResponse call
+func ParseGetHealthcheckReadyResponse(rsp *http.Response) (*GetHealthcheckReadyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetHealthcheckReadyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest HealthcheckReadyResp
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest HealthcheckReadyResp
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest HealthcheckReadyResp
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
 
 	}
 
@@ -365,10 +531,13 @@ func ParseGetPingResponse(rsp *http.Response) (*GetPingResponse, error) {
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-
-	// (GET /healthcheck)
-	GetHealthcheck(w http.ResponseWriter, r *http.Request)
-
+	// healthcheck about process liveness
+	// (GET /healthcheck/live)
+	GetHealthcheckLive(w http.ResponseWriter, r *http.Request)
+	// healthcheck about process readiness
+	// (GET /healthcheck/ready)
+	GetHealthcheckReady(w http.ResponseWriter, r *http.Request)
+	// echo your IP address API
 	// (GET /ping)
 	GetPing(w http.ResponseWriter, r *http.Request)
 }
@@ -382,11 +551,25 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(http.Handler) http.Handler
 
-// GetHealthcheck operation middleware
-func (siw *ServerInterfaceWrapper) GetHealthcheck(w http.ResponseWriter, r *http.Request) {
+// GetHealthcheckLive operation middleware
+func (siw *ServerInterfaceWrapper) GetHealthcheckLive(w http.ResponseWriter, r *http.Request) {
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetHealthcheck(w, r)
+		siw.Handler.GetHealthcheckLive(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetHealthcheckReady operation middleware
+func (siw *ServerInterfaceWrapper) GetHealthcheckReady(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetHealthcheckReady(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -530,24 +713,23 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 		ErrorHandlerFunc:   options.ErrorHandlerFunc,
 	}
 
-	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/healthcheck", wrapper.GetHealthcheck)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/healthcheck/live", wrapper.GetHealthcheckLive)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/healthcheck/ready", wrapper.GetHealthcheckReady)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/ping", wrapper.GetPing)
 
 	return m
 }
 
-type GetHealthcheckRequestObject struct {
+type GetHealthcheckLiveRequestObject struct {
 }
 
-type GetHealthcheckResponseObject interface {
-	VisitGetHealthcheckResponse(w http.ResponseWriter) error
+type GetHealthcheckLiveResponseObject interface {
+	VisitGetHealthcheckLiveResponse(w http.ResponseWriter) error
 }
 
-type GetHealthcheck200JSONResponse struct {
-	Status string `json:"status"`
-}
+type GetHealthcheckLive200JSONResponse HealthcheckLiveResp
 
-func (response GetHealthcheck200JSONResponse) VisitGetHealthcheckResponse(w http.ResponseWriter) error {
+func (response GetHealthcheckLive200JSONResponse) VisitGetHealthcheckLiveResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -555,6 +737,55 @@ func (response GetHealthcheck200JSONResponse) VisitGetHealthcheckResponse(w http
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetHealthcheckReadyRequestObject struct {
+}
+
+type GetHealthcheckReadyResponseObject interface {
+	VisitGetHealthcheckReadyResponse(w http.ResponseWriter) error
+}
+
+type GetHealthcheckReady200JSONResponse HealthcheckReadyResp
+
+func (response GetHealthcheckReady200JSONResponse) VisitGetHealthcheckReadyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetHealthcheckReady500JSONResponse HealthcheckReadyResp
+
+func (response GetHealthcheckReady500JSONResponse) VisitGetHealthcheckReadyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetHealthcheckReady503JSONResponse HealthcheckReadyResp
+
+func (response GetHealthcheckReady503JSONResponse) VisitGetHealthcheckReadyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -582,10 +813,13 @@ func (response GetPing200JSONResponse) VisitGetPingResponse(w http.ResponseWrite
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
-
-	// (GET /healthcheck)
-	GetHealthcheck(ctx context.Context, request GetHealthcheckRequestObject) (GetHealthcheckResponseObject, error)
-
+	// healthcheck about process liveness
+	// (GET /healthcheck/live)
+	GetHealthcheckLive(ctx context.Context, request GetHealthcheckLiveRequestObject) (GetHealthcheckLiveResponseObject, error)
+	// healthcheck about process readiness
+	// (GET /healthcheck/ready)
+	GetHealthcheckReady(ctx context.Context, request GetHealthcheckReadyRequestObject) (GetHealthcheckReadyResponseObject, error)
+	// echo your IP address API
 	// (GET /ping)
 	GetPing(ctx context.Context, request GetPingRequestObject) (GetPingResponseObject, error)
 }
@@ -619,23 +853,47 @@ type strictHandler struct {
 	options     StrictHTTPServerOptions
 }
 
-// GetHealthcheck operation middleware
-func (sh *strictHandler) GetHealthcheck(w http.ResponseWriter, r *http.Request) {
-	var request GetHealthcheckRequestObject
+// GetHealthcheckLive operation middleware
+func (sh *strictHandler) GetHealthcheckLive(w http.ResponseWriter, r *http.Request) {
+	var request GetHealthcheckLiveRequestObject
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.GetHealthcheck(ctx, request.(GetHealthcheckRequestObject))
+		return sh.ssi.GetHealthcheckLive(ctx, request.(GetHealthcheckLiveRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetHealthcheck")
+		handler = middleware(handler, "GetHealthcheckLive")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(GetHealthcheckResponseObject); ok {
-		if err := validResponse.VisitGetHealthcheckResponse(w); err != nil {
+	} else if validResponse, ok := response.(GetHealthcheckLiveResponseObject); ok {
+		if err := validResponse.VisitGetHealthcheckLiveResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetHealthcheckReady operation middleware
+func (sh *strictHandler) GetHealthcheckReady(w http.ResponseWriter, r *http.Request) {
+	var request GetHealthcheckReadyRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetHealthcheckReady(ctx, request.(GetHealthcheckReadyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetHealthcheckReady")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetHealthcheckReadyResponseObject); ok {
+		if err := validResponse.VisitGetHealthcheckReadyResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

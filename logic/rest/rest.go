@@ -2,6 +2,8 @@ package rest
 
 import (
 	"context"
+	"errors"
+	"exp-myddns/gateway/memory"
 	"fmt"
 	"net"
 	"net/http"
@@ -17,8 +19,35 @@ func NewHandler() http.Handler {
 type handler struct {
 }
 
-func (h handler) GetHealthcheck(ctx context.Context, request oapi.GetHealthcheckRequestObject) (oapi.GetHealthcheckResponseObject, error) {
-	return oapi.GetHealthcheck200JSONResponse{Status: "OK"}, nil
+func (h handler) GetHealthcheckLive(_ context.Context, _ oapi.GetHealthcheckLiveRequestObject) (oapi.GetHealthcheckLiveResponseObject, error) {
+	return oapi.GetHealthcheckLive200JSONResponse{
+		Status: "ok",
+	}, nil
+}
+
+func (h handler) GetHealthcheckReady(ctx context.Context, request oapi.GetHealthcheckReadyRequestObject) (oapi.GetHealthcheckReadyResponseObject, error) {
+	state := memory.GetHealthCheckState()
+	var msg *string
+	if state.Err != nil && state.Err.Error() != "" {
+		msg = new(state.Err.Error())
+	}
+
+	res := oapi.HealthcheckReadyResp{
+		Message: msg,
+		Status:  oapi.HealthcheckStatus(state.State.String()),
+	}
+
+	switch state.State {
+	case memory.StateReady, memory.StateDegraded:
+		return oapi.GetHealthcheckReady200JSONResponse(res), nil
+	case memory.StateStarting, memory.StateShuttingDown:
+		return oapi.GetHealthcheckReady503JSONResponse(res), nil
+	case memory.StateError:
+		return oapi.GetHealthcheckReady500JSONResponse(res), nil
+	default:
+		return nil, errors.New("unknown health check state : " + state.State.String())
+	}
+
 }
 
 func (h handler) GetPing(ctx context.Context, request oapi.GetPingRequestObject) (oapi.GetPingResponseObject, error) {

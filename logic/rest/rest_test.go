@@ -31,20 +31,20 @@ func Test_handler_GetHealthcheck(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			resp, err := client.GetHealthcheck(t.Context())
+			resp, err := client.GetHealthcheckLive(t.Context())
 			if tt.wantErr != (err != nil) {
-				t.Errorf("GetHealthcheck() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GetHealthcheckLive() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
-			hcResp, err := gwRest.ParseGetHealthcheckResponse(resp)
+			hcResp, err := gwRest.ParseGetHealthcheckLiveResponse(resp)
 			if err != nil {
-				t.Errorf("GetHealthcheck() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GetHealthcheckLive() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
 			if diff := cmp.Diff(tt.wantStatus, hcResp.JSON200.Status); diff != "" {
-				t.Errorf("GetHealthcheck() diff = %v", diff)
+				t.Errorf("GetHealthcheckLive() diff = %v", diff)
 			}
 		})
 	}
