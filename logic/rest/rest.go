@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"exp-myddns/gateway/memory"
+	"exp-myddns/logging"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 )
@@ -12,11 +14,15 @@ import (
 	oapi "exp-myddns/gateway/rest"
 )
 
-func NewHandler() http.Handler {
-	return oapi.Handler(oapi.NewStrictHandler(new(handler), []oapi.StrictMiddlewareFunc{strictIPRecordHandler}))
+func NewHandler(lh slog.Handler, opts ...logging.LoggerOption) http.Handler {
+	logger := logging.NewLogger(lh, "restHandle", opts...)
+	return oapi.Handler(oapi.NewStrictHandler(new(handler{
+		logger: logger,
+	}), []oapi.StrictMiddlewareFunc{strictIPRecordHandler}))
 }
 
 type handler struct {
+	logger *logging.Logger
 }
 
 func (h handler) GetHealthcheckLive(_ context.Context, _ oapi.GetHealthcheckLiveRequestObject) (oapi.GetHealthcheckLiveResponseObject, error) {

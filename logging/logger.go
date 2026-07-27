@@ -16,12 +16,25 @@ type Logger struct {
 	ctxWiths      []ctxWith
 }
 
-func NewLogger(h slog.Handler, namespace string) *Logger {
-	return &Logger{
+func NewLogger(h slog.Handler, namespace string, opts ...LoggerOption) *Logger {
+	l := &Logger{
 		handler:       h,
 		namespace:     namespace,
 		saveCodeTrace: slog.LevelError,
 	}
+	for _, opt := range opts {
+		opt.apply(l)
+	}
+
+	return l
+}
+
+func (l *Logger) WithOptions(opts ...LoggerOption) *Logger {
+	c := l.clone()
+	for _, opt := range opts {
+		opt.apply(c)
+	}
+	return c
 }
 
 func (l *Logger) SetSaveCodeTraceLevel(level slog.Level) {
@@ -170,4 +183,17 @@ func (l *Logger) clone() *Logger {
 		saveCodeTrace: l.saveCodeTrace,
 		ctxWiths:      cw,
 	}
+}
+
+type LoggerOption interface {
+	apply(*Logger)
+}
+
+type LoggerWithContextKey struct {
+	LogKey string
+	CtxKey any
+}
+
+func (o LoggerWithContextKey) apply(l *Logger) {
+	l.AddContextKeys(o.LogKey, o.CtxKey)
 }

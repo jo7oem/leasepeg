@@ -3,13 +3,14 @@ package rest_test
 import (
 	gwRest "exp-myddns/gateway/rest"
 	"exp-myddns/logic/rest"
+	"log/slog"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 )
 
-func Test_handler_GetHealthcheck(t *testing.T) {
+func Test_handler_GetHealthcheckLive(t *testing.T) {
 	tests := []struct {
 		name       string
 		wantStatus string
@@ -17,12 +18,13 @@ func Test_handler_GetHealthcheck(t *testing.T) {
 	}{
 		{
 			name:       "success",
-			wantStatus: "OK",
+			wantStatus: "ok",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			h := rest.NewHandler()
+			t.Parallel()
+			h := rest.NewHandler(slog.DiscardHandler)
 			srv := httptest.NewServer(h)
 			defer srv.Close()
 			c := srv.Client()

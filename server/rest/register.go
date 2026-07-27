@@ -1,38 +1,25 @@
 package rest
 
 import (
-	"encoding/json"
+	"exp-myddns/logging"
+	"exp-myddns/logic/rest"
+	"log/slog"
 	"net/http"
 )
 
-func NewRegisterHandler() http.Handler {
-	m := http.NewServeMux()
-	m.HandleFunc("GET /ping", GetState)
-	m.HandleFunc("GET /echo", GetEcho)
-
-	return m
-}
-
-func GetState(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte("ok"))
-}
-
-func GetEcho(w http.ResponseWriter, r *http.Request) {
-	rAddr := r.RemoteAddr
-
-	resp := getEchoResponse{
-		Address: rAddr,
+func NewRegisterHandler(logger slog.Handler) http.Handler {
+	res := APIHandler{
+		ServeMux: http.NewServeMux(),
+		logger:   logging.NewLogger(logger, "restAPI"),
 	}
 
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	res.Handle("/", rest.NewHandler(logger, nil))
 
-	w.WriteHeader(http.StatusOK)
+	return res
 }
 
-type getEchoResponse struct {
-	Address string `json:"address"`
+type APIHandler struct {
+	*http.ServeMux
+
+	logger *logging.Logger
 }

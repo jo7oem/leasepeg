@@ -1,6 +1,8 @@
+# 原則
+- KISS原則に従うこと
+- YAGNI原則に従うこと
+
 ## documents
 - docs/reports/*.md : 調査レポート
 - docs/tasks.md : 計画およびタスク管理
-- docs/architecture.md : アーキテクチャ設計
-- docs/schema.md : データ構造
-- docs/requirements.md : 要件定義
+- docs/arch/*/*.md : 設計仕様
