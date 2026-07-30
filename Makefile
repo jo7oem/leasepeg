@@ -20,7 +20,7 @@ go-lint: $(DEV_BIN)/golangci-lint
 	$(DEV_BIN)/golangci-lint run --config=.golangci.yml
 
 .PHONY: setup
-setup: $(DEV_BIN)/air $(DEV_BIN)/dlv $(DEV_BIN)/golangci-lint
+setup: $(DEV_BIN)/air $(DEV_BIN)/dlv $(DEV_BIN)/golangci-lint $(DEV_BIN)/sqlc $(DEV_BIN)/migrate
 
 $(DEV_BIN)/air:
 	mkdir -p $(@D)
@@ -38,6 +38,12 @@ $(DEV_BIN)/dlv:
 $(DEV_BIN)/yamlfmt:
 	mkdir -p $(@D)
 	go install github.com/google/yamlfmt/cmd/yamlfmt@latest
+$(DEV_BIN)/sqlc:
+	mkdir -p $(@D)
+	go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+$(DEV_BIN)/migrate:
+	mkdir -p $(@D)
+	go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
 
 
 .PHONY: ci
