@@ -1,3 +1,11 @@
+---
+Title: 25. SQL Constraints
+Description: 本章は「SQL Constraints」を対象とし、適用範囲と満たすべき制約を規定する。
+Summary: |
+  「25. SQL Constraints」の要件、判断基準、関連する前提を定義する。
+  本章で規定する制約に違反する実装または運用は許容しない。
+---
+
 # 25. SQL Constraints
 
 ## 25.1 概要

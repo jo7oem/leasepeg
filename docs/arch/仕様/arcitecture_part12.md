@@ -1,3 +1,11 @@
+---
+Title: 12. Address Update Semantics
+Description: 本章は「Address Update Semantics」を対象とし、適用範囲と満たすべき制約を規定する。
+Summary: |
+  「12. Address Update Semantics」の要件、判断基準、関連する前提を定義する。
+  本章で規定する制約に違反する実装または運用は許容しない。
+---
+
 # 12. Address Update Semantics
 
 ## 12.1 概要

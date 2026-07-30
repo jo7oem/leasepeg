@@ -1,3 +1,11 @@
+---
+Title: 22. Monitoring and Observability
+Description: 本章は「Monitoring and Observability」を対象とし、適用範囲と満たすべき制約を規定する。
+Summary: |
+  「22. Monitoring and Observability」の要件、判断基準、関連する前提を定義する。
+  本章で規定する制約に違反する実装または運用は許容しない。
+---
+
 # 22. Monitoring and Observability
 
 ## 22.1 概要
