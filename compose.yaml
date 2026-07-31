@@ -23,8 +23,8 @@ services:
     depends_on:
       - postgres
     volumes:
-      - ./sql/postgress/migrations:/migrations
-    command: ["-path", "/migrations", "-database", "postgres://postgres:postgres@postgress:5432/mydatabase?sslmode=disable", "up"]
+      - ./sql/postgres/migrations:/migrations
+    command: ["-path", "/migrations", "-database", "postgres://postgres:postgres@postgres:5432/mydatabase?sslmode=disable", "up"]
   redoc-cli:
     image: redocly/cli:latest
     profiles:
