@@ -6,15 +6,12 @@ distributor:
     otlp:
       protocols:
         grpc:
+            endpoint: "0.0.0.0:4317"
         http:
+            endpoint: "0.0.0.0:4318"
 
 storage:
   trace:
     backend: local
     local:
       path: /tmp/tempo/traces
-
-metrics_generator:
-  registry:
-    external_labels:
-      source: tempo

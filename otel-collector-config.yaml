@@ -10,10 +10,10 @@ processors:
 exporters:
 
   debug:
-    verbosity: normal
+    verbosity: detailed
 
   prometheus:
-    endpoint: "0.0.0.0:8889"
+    endpoint: 0.0.0.0:8889
 
   otlp/tempo:
     endpoint: tempo:4317
@@ -21,6 +21,7 @@ exporters:
       insecure: true
 
 service:
+
   pipelines:
 
     traces:
@@ -32,3 +33,8 @@ service:
       receivers: [otlp]
       processors: [batch]
       exporters: [debug, prometheus]
+
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug]
