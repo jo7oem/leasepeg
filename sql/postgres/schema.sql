@@ -1,5 +1,19 @@
-CREATE TABLE authors (
-                         id   BIGSERIAL PRIMARY KEY,
-                         name text      NOT NULL,
-                         bio  text
+CREATE TABLE Auth_Users (
+    id UUID PRIMARY KEY,
+    username VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE Auth_Methods (
+    user_id UUID REFERENCES Auth_Users(id) ON DELETE CASCADE,
+    role_id UUID REFERENCES Auth_Roles(id) ON DELETE CASCADE,
+    PRIMARY KEY (user_id, role_id)
+);
+
+CREATE TABLE Auth_Roles (
+    id UUID PRIMARY KEY,
+    role_name VARCHAR(255) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

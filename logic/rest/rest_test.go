@@ -1,7 +1,7 @@
 package rest_test
 
 import (
-	gwRest "exp-myddns/gateway/rest"
+	gwRest "exp-myddns/internal/generated/oapi/rest"
 	"exp-myddns/logic/rest"
 	"log/slog"
 	"net/http/httptest"

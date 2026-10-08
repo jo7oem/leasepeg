@@ -29,11 +29,11 @@ $(DEV_BIN)/air:
 
 $(DEV_BIN)/golangci-lint:
 	mkdir -p $(@D)
-	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.10.1
+	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.1
 
 $(DEV_BIN)/dlv:
 	mkdir -p $(@D)
-	go install github.com/go-delve/delve/cmd/dlv@v1.26.0
+	go install github.com/go-delve/delve/cmd/dlv@v1.27.1
 
 $(DEV_BIN)/yamlfmt:
 	mkdir -p $(@D)

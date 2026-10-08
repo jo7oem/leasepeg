@@ -3,15 +3,15 @@ package rest
 import (
 	"context"
 	"errors"
-	"exp-myddns/gateway/memory"
 	"exp-myddns/logging"
+	"exp-myddns/store/memory"
 	"fmt"
 	"log/slog"
 	"net"
 	"net/http"
 )
 import (
-	oapi "exp-myddns/gateway/rest"
+	oapi "exp-myddns/internal/generated/oapi/rest"
 )
 
 func NewHandler(lh slog.Handler, opts ...logging.LoggerOption) http.Handler {
