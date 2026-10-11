@@ -64,6 +64,11 @@ yaml-lint:  $(DEV_BIN)/yamlfmt
 test:
 	go test --race -parallel 8 ./...
 
+# sqlc targets
+.PHONY: sqlc-generate
+sqlc-generate: $(DEV_BIN)/sqlc
+	$(DEV_BIN)/sqlc generate
+
 # Migration targets
 MIGRATE_BIN := $(DEV_BIN)/migrate
 MIGRATE_CMD := $(MIGRATE_BIN) -path ./sql/postgres/migrations -database "postgres://postgres:postgres@localhost:5432/mydatabase?sslmode=disable"

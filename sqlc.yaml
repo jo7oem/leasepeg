@@ -2,9 +2,12 @@ version: "2"
 sql:
   - engine: "postgresql"
     queries: "sql/postgres/query.sql"
-    schema: "sql/postgres/schema.sql"
+    schema: "sql/postgres/schema/public"
     gen:
       go:
         package: "rdb"
         out: "internal/generated/rdb"
         sql_package: "pgx/v5"
+        output_db_file_name: "db_gen.go"
+        output_models_file_name: "models_gen.go"
+        output_files_suffix: "_gen"
