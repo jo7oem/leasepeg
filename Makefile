@@ -63,3 +63,19 @@ yaml-lint:  $(DEV_BIN)/yamlfmt
 .PHONY: test
 test:
 	go test --race -parallel 8 ./...
+
+# Migration targets
+MIGRATE_BIN := $(DEV_BIN)/migrate
+MIGRATE_CMD := $(MIGRATE_BIN) -path ./sql/postgres/migrations -database "postgres://postgres:postgres@localhost:5432/mydatabase?sslmode=disable"
+
+.PHONY: migrate-up
+migrate-up: $(MIGRATE_BIN)
+	$(MIGRATE_CMD) up
+
+.PHONY: migrate-down
+migrate-down: $(MIGRATE_BIN)
+	$(MIGRATE_CMD) down 1
+
+.PHONY: migrate-new
+migrate-new: $(MIGRATE_BIN)
+	./scripts/create-migration.sh $(MIGRATION_NAME)
