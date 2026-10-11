@@ -66,7 +66,7 @@ services:
     volumes:
       - ./dev_tools/etc/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     ports:
-      - "9090:9090"
+      - "9091:9090"
   grafana:
     image: grafana/grafana:latest
     depends_on:
