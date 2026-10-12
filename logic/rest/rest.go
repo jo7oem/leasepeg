@@ -3,15 +3,15 @@ package rest
 import (
 	"context"
 	"errors"
-	"exp-myddns/logging"
-	"exp-myddns/store/memory"
 	"fmt"
+	"leasepeg/logging"
+	"leasepeg/store/memory"
 	"log/slog"
 	"net"
 	"net/http"
 )
 import (
-	oapi "exp-myddns/internal/generated/oapi/rest"
+	oapi "leasepeg/internal/generated/oapi/rest"
 )
 
 func NewHandler(lh slog.Handler, opts ...logging.LoggerOption) http.Handler {
@@ -62,9 +62,9 @@ func (h handler) GetPing(ctx context.Context, request oapi.GetPingRequestObject)
 		return nil, fmt.Errorf("failed to get src IP : %w", err)
 	}
 
-	srcIP, _, err := net.SplitHostPort(srcAddr)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse src IP : %w", err)
+	srcIP := srcAddr
+	if host, _, err := net.SplitHostPort(srcAddr); err == nil {
+		srcIP = host
 	}
 
 	resp := oapi.GetPing200JSONResponse{

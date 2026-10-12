@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"exp-myddns/internal/generated/rdb"
+	"leasepeg/internal/generated/rdb"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"

@@ -1,8 +1,8 @@
 package rest
 
 import (
-	"exp-myddns/logging"
-	"exp-myddns/logic/rest"
+	"leasepeg/logging"
+	"leasepeg/logic/rest"
 	"log/slog"
 	"net/http"
 )
@@ -13,7 +13,7 @@ func NewRegisterHandler(logger slog.Handler) http.Handler {
 		logger:   logging.NewLogger(logger, "restAPI"),
 	}
 
-	res.Handle("/", rest.NewHandler(logger, nil))
+	res.Handle("/", rest.NewHandler(logger))
 
 	return res
 }

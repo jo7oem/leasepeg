@@ -4,9 +4,12 @@ export GOBIN
 MAKEFILE_DIR := $(shell cd $(dir $(lastword $(MAKEFILE_LIST)))&&pwd )
 ABS_DEV_BIN := $(MAKEFILE_DIR)/$(DEV_BIN)
 
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+LDFLAGS := -ldflags "-X main.version=$(VERSION)"
+
 .PHONY: build
 build:
-	go build -o hatsukari ./...
+	go build $(LDFLAGS) -o leasepeg .
 
 .PHONY: fmt
 fmt: $(DEV_BIN)/golangci-lint  $(DEV_BIN)/yamlfmt

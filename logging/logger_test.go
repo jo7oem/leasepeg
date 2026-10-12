@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"exp-myddns/logging"
+	"leasepeg/logging"
 	"log/slog"
 	"strings"
 	"testing"
