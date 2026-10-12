@@ -1,8 +1,8 @@
-# Operations: Commands, Config, Testing, CI/CD
+# 運用: コマンド, 設定, テスト, CI/CD
 
-## Configuration
+## 設定
 
-**File**: `config.yaml` (copy from `config.yaml.example`)
+**ファイル**: `config.yaml`（`config.yaml.example` からコピー）
 
 ```yaml
 server:
@@ -22,134 +22,134 @@ database:
   name: ""
 ```
 
-**Why YAML not env-only?**
-- Structured config (nested sections) maps cleanly to Go struct.
-- `viper` or `koanf` can overlay env vars (`SERVER_PORT`, `DATABASE_HOST`).
-- Example file documents all options.
+**なぜ YAML で env-only じゃない？**
+- 構造化設定（ネストセクション）が Go 構造体にクリーンマップ。
+- `viper` や `koanf` で環境変数オーバーレイ可能（`SERVER_PORT`, `DATABASE_HOST` 等）。
+- 例ファイルが全オプションを文書化。
 
-## Development Workflow
+## 開発ワークフロー
 
-### Start Local Dev
+### ローカル開発開始
 ```bash
-# Terminal 1: PostgreSQL (if using postgres mode)
+# ターミナル 1: PostgreSQL（postgres モード時）
 podman compose up postgres
 
-# Terminal 2: App with hot reload (air)
-make setup  # first time only
-air         # watches .go files, rebuilds, restarts
+# ターミナル 2: ホットリロード付きアプリ（air）
+make setup  # 初回のみ
+air         # .go ファイル監視, リビルド, 再起動
 ```
 
-### Run Tests
+### テスト実行
 ```bash
 make test
-# Equivalent: go test --race -parallel 8 ./...
+# 同等: go test --race -parallel 8 ./...
 ```
 
-**Why `--race -parallel 8`?**
-- Race detector catches data races (critical for concurrent health state).
-- Parallel 8: balances CPU usage on typical dev machines.
+**なぜ `--race -parallel 8`？**
+- レース検出器がデータ競合を検知（並行ヘルスステートで重要）。
+- Parallel 8: 一般的開発マシンで CPU 使用率と速度のバランス。
 
 ### Lint/Format
 ```bash
-make fmt      # fix: golangci-lint --fix + yamlfmt
-make go-lint  # check only
-make lint     # all (go + redoc + yaml)
+make fmt      # 修正: golangci-lint --fix + yamlfmt
+make go-lint  # チェックのみ
+make lint     # 全部 (go + redoc + yaml)
 ```
 
-**Why golangci-lint v2?**
-- Faster, native Go 1.22+ support.
-- Config in `.golangci.yml` (not shown here).
+**なぜ golangci-lint v2？**
+- 高速、Go 1.22+ ネイティブ対応。
+- 設定は `.golangci.yml`（ここでは未表示）。
 
-## Database Operations
+## データベース操作
 
-### Generate SQL Layer
+### SQL 層生成
 ```bash
 make sqlc-generate
-# Reads: sql/postgres/query.sql + schema/
-# Writes: internal/generated/rdb/*_gen.go
+# 入力: sql/postgres/query.sql + schema/
+# 出力: internal/generated/rdb/*_gen.go
 ```
 
-### Create Migration
+### マイグレーション作成
 ```bash
 make migrate-new MIGRATION_NAME=add_device_index
-# Creates: sql/postgres/migrations/000002_add_device_index.up/down.sql
+# 作成: sql/postgres/migrations/000002_add_device_index.up/down.sql
 ```
 
-### Apply Migrations (Local)
+### マイグレーション適用（ローカル）
 ```bash
-# Requires running postgres (podman compose up postgres)
+# 要: 稼働中 postgres（podman compose up postgres）
 make migrate-up
 ```
 
-### Rollback
+### ロールバック
 ```bash
-make migrate-down  # rolls back 1 migration
+make migrate-down  # 1 つ戻す
 ```
 
-**Migration naming convention**: `NNNNNN_verb_noun` (e.g., `000002_add_device_idx`, `000003_alter_records_add_col`).
+**マイグレーション命名規則**: `NNNNNN_動詞_名詞`（例: `000002_add_device_idx`, `000003_alter_records_add_col`）。
 
-**Why not auto-migrate on startup?**
-- Explicit control for production.
-- Review SQL before apply.
-- Rollback capability required.
+**なぜ起動時自動マイグレーションじゃない？**
+- 本番での明示的制御。
+- 適用前 SQL レビュー。
+- ロールバック機能必須。
 
-## API Generation
+## API 生成
 
 ```bash
 cd internal/generated/oapi/rest && go generate
-# Reads: rest.yaml
-# Writes: rest.gen.go
+# 入力: rest.yaml
+# 出力: rest.gen.go
 ```
 
-**Add to Makefile** (TODO):
+**Makefile 追加予定**（TODO）:
 ```makefile
 .PHONY: oapi-generate
 oapi-generate:
 	cd internal/generated/oapi/rest && go generate
 ```
 
-## CI/CD Pipeline (GitHub Actions implied)
+## CI/CD パイプライン（GitHub Actions 前提）
 
-Current `Makefile` targets map to CI stages:
+現 `Makefile` ターゲットが CI ステージに対応:
 
-| Stage | Command | Purpose |
-|-------|---------|---------|
-| `lint` | `make lint` | Static analysis, formatting |
-| `test` | `make test` | Unit + race detection |
-| `build` | `make build` | Compile binary (with version ldflags) |
+| ステージ | コマンド | 目的 |
+|---------|---------|------|
+| `lint` | `make lint` | 静的解析, フォーマット |
+| `test` | `make test` | 単体テスト + レース検出 |
+| `build` | `make build` | バイナリビルド（バージョン ldflags 付き） |
 
-**Redoc lint** (`make redoc-lint`): Validates OpenAPI spec via `redoc-cli` in container.
+**Redoc lint** (`make redoc-lint`): `redoc-cli` でコンテナ内 OpenAPI スペック検証。
 
-**Version injection**: 
+**バージョン注入**:
 ```makefile
 VERSION ?= $(shell git describe --tags --always --dirty)
 LDFLAGS := -ldflags "-X main.version=$(VERSION)"
 ```
-Binary reports version via `main.version` variable.
+バイナリは `main.version` 変数でバージョン報告。
 
-## Production Deployment Considerations
+## 本番デプロイ考慮事項
 
-### Binary
+### バイナリ
 ```bash
 make build
-# Output: ./leasepeg (static-ish, cgo for pgx)
+# 出力: ./leasepeg（static 的, pgx で cgo あり）
 ```
 
-### Container (Not Yet Defined)
+### コンテナ（未定義）
 ```dockerfile
 # Multi-stage: build → scratch/distroless
-# Copy config.yaml, migrate binary, run migrations → start server
+# config.yaml, migrate バイナリコピー, マイグレーション実行 → サーバー起動
 ```
 
-### Database Migration in Prod
-- Run `migrate-up` as init container or separate job.
-- App waits for DB ready (healthcheck) before serving.
+### 本番での DB マイグレーション
+- `migrate-up` を init container または別ジョブで実行。
+- アプリは DB 就緒（ヘルスチェック）待機後サーブ開始。
 
-### Health Checks
-- Liveness: `GET /healthcheck/live` (process alive)
-- Readiness: `GET /healthcheck/ready` (dependencies OK)
+### ヘルスチェック
+- Liveness: `GET /healthcheck/live`（プロセス生存）
+- Readiness: `GET /healthcheck/ready`（依存関係 OK）
 
-**K8s probes**:
+**K8s プローブ**:
 ```yaml
 livenessProbe:
   httpGet:
@@ -163,11 +163,11 @@ readinessProbe:
   initialDelaySeconds: 3
 ```
 
-## Unresolved / Open Questions
+## 未解決 / 未決事項
 
-1. **Secrets management**: `config.yaml` has `password: ""`. Use env vars, Vault, or SealedSecrets?
-2. **Log aggregation**: JSON format ready. Vector/Fluent Bit config needed.
-3. **Metrics endpoint**: Not exposed. Add `/metrics` (Prometheus) in `server/rest`?
-4. **Graceful shutdown timeout**: Configurable? Currently hardcoded in `cmd/server.go`.
-5. **Backup/restore**: PostgreSQL backup strategy (pg_dump, PITR) not documented.
-6. **Load testing**: No baseline. Add `hey` or `k6` script for `/ping` and future endpoints.
+1. **シークレット管理**: `config.yaml` に `password: ""`。環境変数, Vault, SealedSecrets どれを使う？
+2. **ログ集約**: JSON 形式準備済み。Vector/Fluent Bit 設定必要。
+3. **メトリクスエンドポイント**: 未公開。`server/rest` に `/metrics`（Prometheus）追加検討？
+4. **グレースフルシャットダウンタイムアウト**: 設定可能？ 現状 `cmd/server.go` でハードコード。
+5. **バックアップ/リストア**: PostgreSQL バックアップ戦略（pg_dump, PITR）未文書化。
+6. **負荷テスト**: ベースラインなし。`hey` または `k6` スクリプトを `/ping` と将来エンドポイント用に追加。
