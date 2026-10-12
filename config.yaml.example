@@ -1,0 +1,18 @@
+# leasepeg 設定ファイル例
+# コピーして config.yaml として使用してください
+
+server:
+  host: "0.0.0.0"
+  port: 8080
+
+logging:
+  level: "info"      # debug, info, warn, error
+  format: "json"     # json, text
+
+database:
+  type: "memory"     # memory, postgres
+  host: "localhost"
+  port: 5432
+  user: ""
+  password: ""
+  name: ""
