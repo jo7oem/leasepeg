@@ -87,3 +87,7 @@ migrate-down: $(MIGRATE_BIN)
 .PHONY: migrate-new
 migrate-new: $(MIGRATE_BIN)
 	./scripts/create-migration.sh $(MIGRATION_NAME)
+
+.PHONY: run-dev
+run-dev: setup
+	$(DEV_BIN)/air -c .air.toml

@@ -1,4 +1,20 @@
 services:
+  app:
+    image: golang:1.27
+    container_name: app
+    working_dir: /app
+    volumes:
+      - .:/app
+      - go_cache:/root/.cache/go-build/
+      - go_build:/go/pkg/
+    command:
+      - make
+      - run-dev
+    depends_on:
+      - postgres
+      - otel-collector
+    ports:
+      - "8080:8080"
   postgres:
     image: postgres:18
     container_name: postgres
@@ -81,3 +97,5 @@ services:
       - ./dev_tools/etc/grafana/provisioning:/etc/grafana/provisioning:ro
 volumes:
   pg_data:
+  go_cache:
+  go_build:
