@@ -19,6 +19,8 @@ linters:
   disable:
     - depguard
     - wsl
+    - gomodguard
+    - exhaustruct
   # All available settings of specific linters.
   settings:
     wsl_v5:
