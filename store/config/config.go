@@ -8,24 +8,11 @@ import (
 )
 
 type Config struct {
-	Server struct {
-		Host string `mapstructure:"host"`
-		Port int    `mapstructure:"port"`
-	} `mapstructure:"server"`
+	Server Server `mapstructure:"server"`
 
-	Logging struct {
-		Level  string `mapstructure:"level"`
-		Format string `mapstructure:"format"`
-	} `mapstructure:"logging"`
+	Logging Logging `mapstructure:"logging"`
 
-	Database struct {
-		Type     string `mapstructure:"type"`
-		Host     string `mapstructure:"host"`
-		Port     int    `mapstructure:"port"`
-		User     string `mapstructure:"user"`
-		Password string `mapstructure:"password"`
-		Name     string `mapstructure:"name"`
-	} `mapstructure:"database"`
+	Database Database `mapstructure:"database"`
 }
 
 func Load() (*Config, error) {
@@ -34,35 +21,102 @@ func Load() (*Config, error) {
 		return nil, err
 	}
 
-	if cfg.Server.Host == "" {
-		cfg.Server.Host = "0.0.0.0"
-	}
-	if cfg.Server.Port == 0 {
-		cfg.Server.Port = 8080
-	}
-	if cfg.Logging.Level == "" {
-		cfg.Logging.Level = "info"
-	}
-	if cfg.Logging.Format == "" {
-		cfg.Logging.Format = "json"
-	}
-	if cfg.Database.Type == "" {
-		cfg.Database.Type = "memory"
-	}
-	if cfg.Database.Port == 0 {
-		cfg.Database.Port = 5432
-	}
+	cfg.Server.setDefaults()
+	cfg.Database.setDefaults()
+	cfg.Logging.setDefaults()
 
-	if cfg.Server.Port < 1 || cfg.Server.Port > 65535 {
-		return nil, fmt.Errorf("無効なポート: %d", cfg.Server.Port)
+	if err := cfg.Server.validate(); err != nil {
+		return nil, err
 	}
-	if cfg.Database.Port < 1 || cfg.Database.Port > 65535 {
-		return nil, fmt.Errorf("無効なDBポート: %d", cfg.Database.Port)
+	if err := cfg.Database.validate(); err != nil {
+		return nil, err
 	}
-	cfg.Logging.Format = strings.ToLower(cfg.Logging.Format)
-	if cfg.Logging.Format != "json" && cfg.Logging.Format != "text" {
-		return nil, fmt.Errorf("無効なログ形式: %s (json|text)", cfg.Logging.Format)
+	if err := cfg.Logging.validate(); err != nil {
+		return nil, err
 	}
 
 	return &cfg, nil
+}
+
+type Server struct {
+	Host string `mapstructure:"host"`
+	Port int    `mapstructure:"port"`
+}
+
+func (s *Server) setDefaults() {
+	if s.Host == "" {
+		s.Host = "0.0.0.0"
+	}
+	if s.Port == 0 {
+		s.Port = 8080
+	}
+}
+
+func (s *Server) validate() error {
+	if s.Port < 1 || s.Port > 65535 {
+		return fmt.Errorf("無効なポート: %d", s.Port)
+	}
+	return nil
+}
+
+type Logging struct {
+	Level  string `mapstructure:"level"`
+	Format string `mapstructure:"format"`
+}
+
+func (l *Logging) setDefaults() {
+	if l.Level == "" {
+		l.Level = "info"
+	}
+	if l.Format == "" {
+		l.Format = "json"
+	}
+	l.Format = strings.ToLower(l.Format)
+}
+
+func (l *Logging) validate() error {
+	if l.Format != "json" && l.Format != "text" {
+		return fmt.Errorf("無効なログ形式: %s (json|text)", l.Format)
+	}
+	return nil
+}
+
+type Database struct {
+	Type     string `mapstructure:"type"`
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	User     string `mapstructure:"user"`
+	Password string `mapstructure:"password"`
+	Name     string `mapstructure:"name"`
+}
+
+func (d *Database) setDefaults() {
+	if d.Type == "" {
+		d.Type = "memory"
+	}
+	if d.Port == 0 {
+		d.Port = 5432
+	}
+	if d.Type != "postgres" {
+		return
+	}
+	if d.Host == "" {
+		d.Host = "localhost"
+	}
+	if d.User == "" {
+		d.User = "postgres"
+	}
+	if d.Password == "" {
+		d.Password = "postgres"
+	}
+	if d.Name == "" {
+		d.Name = "mydatabase"
+	}
+}
+
+func (d *Database) validate() error {
+	if d.Port < 1 || d.Port > 65535 {
+		return fmt.Errorf("無効なDBポート: %d", d.Port)
+	}
+	return nil
 }
